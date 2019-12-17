@@ -1,24 +1,20 @@
-import * as Builtins from './builtins';
+import { VM } from './VM';
 
-export function equal(data: any, value: any, path?: string) {
+export function equal(data: any, path: string, value: any) {
   const strValue = JSON.stringify(value);
-  if (path) {
-    data = Builtins.get(data, path);
-    const strData  = JSON.stringify(data);
-    return 'expect ' + strData + ' from ' + path + ' to be equal with ' + strValue;
-  } else {
-    const strData  = JSON.stringify(data);
-    return 'expect ' + strData + ' to be equal with ' + strValue;
-  }
+  data = VM.get(data, path);
+  const strData  = JSON.stringify(data);
+  return 'expect ' + strData + ' from ' + path + ' to be equal with ' + strValue;
 }
 
-export function isString(data: any, path?: string) {
-  if (path) {
-    data = Builtins.get(data, path);
-    const strData  = JSON.stringify(data);
-    return 'expect ' + strData + ' from ' + path + ' to be a string';
-  } else {
-    const strData  = JSON.stringify(data);
-    return 'expect ' + strData + ' to be a string';
-  }
+export function is(data: any, path: string) {
+  data = VM.get(data, path);
+  const strData  = JSON.stringify(data);
+  return 'expect ' + strData + ' from ' + path + ' to be a string';
+}
+
+export function String_contains(data: any, path: string, pattern: string) {
+  data = VM.get(data, path);
+  const strData = JSON.stringify(data);
+  return 'expect ' + strData + ' from ' + path + ' contains ' + pattern;
 }

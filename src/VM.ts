@@ -3,21 +3,33 @@ import * as Builtins from './builtins';
 export type AST = [string, ...any[]];
 
 export class VM {
-  protected methods: Map<string, Function>;
+  protected functions: Map<string, Function>;
 
-  constructor() {
-    this.methods = new Map();
+  static get(data: any, path: string) {
+    if (!path) return data;
+    return path.split('.').reduce((value, key) => value ? value[key] : null, data);
   }
 
-  public exec(ast: AST, data: any) {
-    debugger;
-    const action = ast[0];
+  static set(data: any, path: string, value: any) {
+
+  }
+
+  static join(...paths: Array<string>) {
+    return paths.reduce((result, arg) => result + (result ? '.' : '') + arg, '');
+  }
+
+  constructor() {
+    this.functions = new Map();
+  }
+
+  public exec(data: any, path: string, ast: AST) {
+    const action = ast[0].indexOf('.') > 0 ? ast[0].replace(/\./g, '_') : ast[0];
     if (action == null) return data;
-    const method = this.methods.get(action);
+    const method = this.functions.get(action);
     if (method != null) {
-      return method.apply(this, [data].concat(ast.slice(1)));
+      return method.apply(this, [data, path, ...ast.slice(1)]);
     } else if (action in Builtins) {
-      return Builtins[action].apply(this, [data].concat(ast.slice(1)));
+      return Builtins[action].apply(this, [data, path, ...ast.slice(1)]);
     } else {
       throw new Error('function ' + action + ' not found');
     }

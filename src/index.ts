@@ -3,7 +3,6 @@ import * as Builtins from './builtins';
 const colors = require('colors');
 
 const vm = new VM();
-export const exec = (ast: AST, data: any) => vm.exec(ast, data);
 export { Builtins };
 
 export const tick   = colors.green.bold('✔');
@@ -20,8 +19,15 @@ export function test(tree: any, indent?: number) {
         if (typeof param === 'function') {
           return param(data);
         } else if (param instanceof Array) {
-          exec(['assertAll', param], data);
-          count += param.length;
+          if (typeof param[0] == 'string') {
+            const result = vm.exec(data, '', <AST>param);
+            if (typeof result == 'number') count += result;
+            else count += 1;
+          } else {
+            const result = vm.exec(data, '', ['Assert.all', param]);
+            if (typeof result == 'number') count += result;
+            else count += 1;
+          }
           return data;
         }
       }, null);

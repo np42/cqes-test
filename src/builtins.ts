@@ -1,28 +1,43 @@
-import { AST }          from './VM';
+import { AST, VM }      from './VM';
 import * as Descriptors from './descriptors';
 
-export function get(data: any, path?: string) {
-  return typeof path != 'string' ? data
-    : path.split('.').reduce((value, key) => value ? value[key] : null, data);
+export function equal(data: any, path: string, value: any) {
+  return VM.get(data, path) == value;
 };
 
-export function equal(data: any, value: any, path?: string) {
-  if (arguments.length > 2) data = get(data, path);
-  return data == value;
-}
+export function is(data: any, path: string, type: string) {
+  return typeof VM.get(data, path) === type;
+};
 
-export function isString(data: any, path?: string) {
-  if (arguments.length > 1) data = get(data, path);
-  return typeof data === 'string';
-}
+export function assert(data: any, path: string, test: AST) {
+  const result = this.exec(data, path, test);
+  if (typeof result === 'number' && result > 0) return result;
+  if (result) return 1;
+  const name = test[0].indexOf('.') > 0 ? test[0].replace(/\./g, '_') : test[0];
+  if (test[0] in Descriptors) {
+    throw new Error(Descriptors[test[0]].apply(this, [data, path, ...test.slice(1)]));
+  } else {
+    throw new Error(JSON.stringify(test) + ': not satisfied');
+  }
+};
 
-export function assertAll(data: any, tests: AST[]) {
-  tests.forEach(test => {
-    if (this.exec(test, data)) return ;
-    if (test[0] in Descriptors) {
-      throw new Error(Descriptors[test[0]].apply(this, [data].concat(test.slice(1))));
+export function Assert_all(data: any, path: string, tests: AST[]) {
+  return tests.reduce((passed, test) => passed + assert.call(this, data, test));
+};
+
+export function Assert_fields(data: any, path: string, ...tests: AST[]) {
+  return tests.reduce((passed, test) => {
+    const newPath = VM.join(path, test[0]);
+    if (test[1] instanceof Array) {
+      return passed + Assert_fields.apply(this, [data, newPath, ...test.slice(1)]);
     } else {
-      throw new Error(JSON.stringify(test) + ': not satisfied');
+      return passed + assert.call(this, data, newPath, test.slice(1));
     }
-  });
-}
+  }, 0);
+};
+
+export function String_contains(data: any, path: string, pattern: string) {
+  const value = VM.get(data, path);
+  if (typeof value != 'string') return false;
+  return !!~value.indexOf(pattern);
+};
