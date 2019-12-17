@@ -2,13 +2,18 @@ import { VM, AST }   from './VM';
 import * as Builtins from './builtins';
 const colors = require('colors');
 
+export type TestingTree       = TestingGroup | TestingChain;
+export interface TestingGroup { [description: string]: TestingTree };
+export type TestingChain      = Array<TestingItem>;
+export type TestingItem       = Function | AST;
+
 const vm = new VM();
 export { Builtins };
 
 export const tick   = colors.green.bold('✔');
 export const ballot = colors.red.bold('✗');
 
-export function test(tree: any, indent?: number) {
+export function test(tree: TestingTree, indent?: number) {
   if (indent == null) indent = 0;
   const prefix = Array(indent).fill(' ').join('');
   if (tree instanceof Array) {

@@ -1,7 +1,7 @@
 import { AST, VM }      from './VM';
 import * as Descriptors from './descriptors';
 
-export function equal(data: any, path: string, value: any) {
+export function equals(data: any, path: string, value: any) {
   return VM.get(data, path) == value;
 };
 

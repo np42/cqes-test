@@ -1,6 +1,6 @@
 import { VM } from './VM';
 
-export function equal(data: any, path: string, value: any) {
+export function equals(data: any, path: string, value: any) {
   const strValue = JSON.stringify(value);
   data = VM.get(data, path);
   const strData  = JSON.stringify(data);
