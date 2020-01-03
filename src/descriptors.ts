@@ -3,7 +3,7 @@ import { VM } from './VM';
 export function equiv(data: any, value: any) {
   const strValue = JSON.stringify(value);
   const strData  = JSON.stringify(data);
-  return 'expect ' + strData + ' to be equal with ' + strValue;
+  return 'expected: ' + strValue + ' got: ' + strData;
 };
 
 export function is(data: any) {

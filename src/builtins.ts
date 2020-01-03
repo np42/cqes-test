@@ -1,6 +1,7 @@
 import { AST, VM }       from './VM';
 import * as Descriptors  from './descriptors';
 import { C, E, Q, R, S } from 'cqes';
+import { v4 as uuid }    from 'uuid';
 
 export function equiv(data: any, path: string, value: any) {
   return VM.get(data, path) == value;
@@ -17,9 +18,8 @@ export function assert(data: any, path: string, test: AST) {
   const name = test[0].indexOf('.') > 0 ? test[0].replace(/\./g, '_') : test[0];
   if (name in Descriptors) {
     const value = VM.get(data, path);
-    const message = Descriptors[name].apply(this, [value, ...test.slice(2)]);
-    const realPath = VM.join(path, test[1]);
-    throw new Error((realPath || '(root)') + ': ' + message);
+    const message = Descriptors[name].apply(this, [value, ...test.slice(1)]);
+    throw new Error((path || '(root)') + ': ' + message);
   } else {
     throw new Error(JSON.stringify(test) + ': not satisfied');
   }
@@ -56,20 +56,27 @@ export function String_contains(data: any, path: string, pattern: string) {
 
 export function Manager_test(data: any, path: string, options: any, ...tests: any[]) {
   const category = options.state && options.state.name || 'Test';
-  const id       = 'test42';
+  const id       = uuid();
   const streamId = category + '-' + id;
   const CH       = options.Manager.CommandHandlers;
   const DH       = options.Manager.DomainHandlers;
-  let state      = data instanceof S ? data : new S(streamId, -1, new options.state());
+  let state      = data instanceof S ? data : new S(streamId, -1, options.state.from({}));
   for (const test of tests) {
     const command = new C(category, id, test.order, test.data, test.meta);
-    let events = CH.prototype[test.order](state, command);
-    if (events instanceof E) events = [events];
-    else if (events == null) events = [];
+    const events = [];
+    const result = CH.prototype[test.order](state, command, (e: E) => events.push(e));
+    if (result instanceof E) events.push(result);
+    if (test.expectType) {
+      const types = test.expectType instanceof Array ? test.expectType : [test.expectType];
+      for (const type of types)
+        if (!events.reduce((ok: boolean, evt: E) => ok ? ok : evt.type === type, false))
+          throw new Error('Expected an event of type: ' + test.expectType);
+    }
     for (const event of events) {
+      const revision = state.revision;
       const result = DH.prototype[event.type](state, event);
-      if (result == null) continue ;
-      state = result;
+      if (result instanceof S) state = result;
+      state.revision = revision + 1;
     }
   }
   state.data = options.state.from(state.data);

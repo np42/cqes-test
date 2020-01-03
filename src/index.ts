@@ -20,7 +20,7 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0) {
     try {
       return ast.reduce((session, param) => {
         if (typeof param === 'function') {
-          return { data: param(session.data), count: 0 };
+          return { data: param(session.data), count: session.count };
         } else if (param instanceof Array) {
           if (typeof param[0] == 'string') {
             const result = vm.exec(session.data, '', <AST>param);
@@ -47,7 +47,7 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0) {
         } else if (param && typeof param === 'object') {
           process.stdout.write('\n');
           test(param, data, indent);
-          return { data, count: 0 };
+          return { data, count: session.count };
         } else {
           return session;
         }
@@ -68,7 +68,7 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0) {
         else process.stdout.write('\n');
       }
     }
-    if (indent == 0) process.stdout.write('\n');
+    process.stdout.write('\n');
     return { data, count: 0 };
   } else {
     throw new Error('TODO');
