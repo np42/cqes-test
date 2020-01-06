@@ -13,7 +13,8 @@ export { Builtins };
 export const tick   = colors.green.bold('✔');
 export const ballot = colors.red.bold('✗');
 
-export function test(ast: TestingTree, data: any = null, indent: number = 0) {
+export function test(ast: TestingTree, data: any = null, indent: number = 0): { count: number, data: any } {
+  debugger;
   const prefix = Array(indent).fill(' ').join('');
   const session = { count: 0, data };
   if (ast instanceof Array) {
@@ -46,8 +47,8 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0) {
           return session;
         } else if (param && typeof param === 'object') {
           process.stdout.write('\n');
-          test(param, data, indent);
-          return { data, count: session.count };
+          const { count } = test(param, session.data, indent);
+          return { data: session.data, count };
         } else {
           return session;
         }

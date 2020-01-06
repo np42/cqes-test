@@ -11,6 +11,10 @@ export function is(data: any, path: string, type: string) {
   return typeof VM.get(data, path) === type;
 };
 
+export function isUUID(data: any, path: string) {
+  return /^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(VM.get(data, path));
+}
+
 export function assert(data: any, path: string, test: AST) {
   const result = this.exec(data, path, test);
   if (typeof result === 'number' && result > 0) return result;
@@ -61,24 +65,45 @@ export function Manager_test(data: any, path: string, options: any, ...tests: an
   const CH       = options.Manager.CommandHandlers;
   const DH       = options.Manager.DomainHandlers;
   let state      = data instanceof S ? data : new S(streamId, -1, options.state.from({}));
+  let count      = 0;
   for (const test of tests) {
+    count += 1;
     const command = new C(category, id, test.order, test.data, test.meta);
     const events = [];
     const result = CH.prototype[test.order](state, command, (e: E) => events.push(e));
     if (result instanceof E) events.push(result);
-    if (test.expectType) {
-      const types = test.expectType instanceof Array ? test.expectType : [test.expectType];
-      for (const type of types)
+    if (test.expectTypes) {
+      const types = test.expectTypes instanceof Array ? test.expectTypes : [test.expectTypes];
+      for (const type of types) {
+        count += 1;
         if (!events.reduce((ok: boolean, evt: E) => ok ? ok : evt.type === type, false))
           throw new Error('Expected an event of type: ' + test.expectType);
+      }
+    }
+    if (test.assertEvents) {
+      for (const type in test.assertEvents) {
+        events.forEach(event => {
+          if (event.type != type) return ;
+          test.assertEvents[type].forEach((test: AST) => {
+            count += 1;
+            this.exec(event, test[0], ['assert', test.slice(1)]);
+          });
+        });
+      }
     }
     for (const event of events) {
       const revision = state.revision;
       const result = DH.prototype[event.type](state, event);
       if (result instanceof S) state = result;
+      state.data = options.state.from(state.data);
       state.revision = revision + 1;
     }
+    if (test.assertState) {
+      test.assertState.forEach((test: AST) => {
+        count += 1;
+        this.exec(state, test[0], ['assert', test.slice(1)]);
+      });
+    }
   }
-  state.data = options.state.from(state.data);
-  return { count: tests.length, value: state };
+  return { count, value: state };
 }
