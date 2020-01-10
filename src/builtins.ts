@@ -70,32 +70,36 @@ export function Manager_test(data: any, path: string, options: any, ...tests: an
     count += 1;
     const command = new C(category, id, test.order, test.data, test.meta);
     const events = [];
-    const result = CH.prototype[test.order](state, command, (e: E) => events.push(e));
-    if (result instanceof E) events.push(result);
-    if (test.expectTypes) {
-      const types = test.expectTypes instanceof Array ? test.expectTypes : [test.expectTypes];
-      for (const type of types) {
-        count += 1;
-        if (!events.reduce((ok: boolean, evt: E) => ok ? ok : evt.type === type, false))
-          throw new Error('Expected an event of type: ' + test.expectType);
+    if ('order' in test) {
+      const result = CH.prototype[test.order](state, command, (e: E) => events.push(e));
+      if (result instanceof E) events.push(result);
+      if (test.expectTypes) {
+        const types = test.expectTypes instanceof Array ? test.expectTypes : [test.expectTypes];
+        for (const type of types) {
+          count += 1;
+          if (!events.reduce((ok: boolean, evt: E) => ok ? ok : evt.type === type, false))
+            throw new Error('Expected an event of type: ' + test.expectType);
+        }
       }
-    }
-    if (test.assertEvents) {
-      for (const type in test.assertEvents) {
-        events.forEach(event => {
-          if (event.type != type) return ;
-          test.assertEvents[type].forEach((test: AST) => {
-            count += 1;
-            this.exec(event, test[0], ['assert', test.slice(1)]);
+      if (test.assertEvents) {
+        for (const type in test.assertEvents) {
+          events.forEach(event => {
+            if (event.type != type) return ;
+            test.assertEvents[type].forEach((test: AST) => {
+              count += 1;
+              this.exec(event, test[0], ['assert', test.slice(1)]);
+            });
           });
-        });
+        }
       }
+    } else if ('event' in test) {
+      events.push(new E(category, streamId, -1, test.event, test.data));
     }
     for (const event of events) {
       const revision = state.revision;
       const result = DH.prototype[event.type](state, event);
       if (result instanceof S) state = result;
-      state.data = options.state.from(state.data);
+      //state.data = options.state.from(state.data);
       state.revision = revision + 1;
     }
     if (test.assertState) {

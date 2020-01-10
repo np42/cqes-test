@@ -14,7 +14,6 @@ export const tick   = colors.green.bold('✔');
 export const ballot = colors.red.bold('✗');
 
 export function test(ast: TestingTree, data: any = null, indent: number = 0): { count: number, data: any } {
-  debugger;
   const prefix = Array(indent).fill(' ').join('');
   const session = { count: 0, data };
   if (ast instanceof Array) {
@@ -58,18 +57,21 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0): { 
       return { count: 0, data };
     }
   } else if (ast && typeof ast === 'object') {
+    let didSucceed = false;
     for (const label in ast) {
       const value = ast[label];
       const hisChildIsObject = value && typeof value === 'object' && !(value instanceof Array);
+      if (didSucceed) process.stdout.write('\n');
       process.stdout.write(prefix + label + ':');
       if (hisChildIsObject) process.stdout.write('\n');
+      didSucceed = false;
       const { count } = test(value, data, indent + 2);
       if (!hisChildIsObject) {
-        if (count > 0) succeed(count);
+        if (count > 0) { didSucceed = true; succeed(count); }
         else process.stdout.write('\n');
       }
     }
-    process.stdout.write('\n');
+    /* !! */ process.stdout.write('\n');
     return { data, count: 0 };
   } else {
     throw new Error('TODO');
