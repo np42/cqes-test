@@ -1,18 +1,18 @@
-import { AST, VM }       from './VM';
-import * as Descriptors  from './descriptors';
-import { C, E, Q, R, S } from 'cqes';
-import { v4 as uuid }    from 'uuid';
+import { AST, VM, get, join } from 'cqes-util';
+import { C, E, Q, R, S }      from 'cqes';
+import * as Descriptors       from './descriptors';
+import { v4 as uuid }         from 'uuid';
 
 export function equiv(data: any, path: string, value: any) {
-  return VM.get(data, path) == value;
+  return get(data, path) == value;
 };
 
 export function is(data: any, path: string, type: string) {
-  return typeof VM.get(data, path) === type;
+  return typeof get(data, path) === type;
 };
 
 export function isUUID(data: any, path: string) {
-  return /^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(VM.get(data, path));
+  return /^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(get(data, path));
 }
 
 export function assert(data: any, path: string, test: AST) {
@@ -21,7 +21,7 @@ export function assert(data: any, path: string, test: AST) {
   if (result) return 1;
   const name = test[0].indexOf('.') > 0 ? test[0].replace(/\./g, '_') : test[0];
   if (name in Descriptors) {
-    const value = VM.get(data, path);
+    const value = get(data, path);
     const message = Descriptors[name].apply(this, [value, ...test.slice(1)]);
     throw new Error((path || '(root)') + ': ' + message);
   } else {
@@ -35,7 +35,7 @@ export function Assert_all(data: any, path: string, tests: AST[]) {
 
 export function Assert_fields(data: any, path: string, ...tests: AST[]) {
   return tests.reduce((passed, test) => {
-    const newPath = VM.join(path, test[0]);
+    const newPath = join(path, test[0]);
     if (test[1] instanceof Array) {
       return passed + Assert_fields.apply(this, [data, newPath, ...test.slice(1)]);
     } else {
@@ -45,15 +45,15 @@ export function Assert_fields(data: any, path: string, ...tests: AST[]) {
 };
 
 export function Math_greaterThan(data: any, path: string, compared: number) {
-  return VM.get(data, path) > compared;
+  return get(data, path) > compared;
 }
 
 export function Math_lesserThan(data: any, path: string, compared: number) {
-  return VM.get(data, path) < compared;
+  return get(data, path) < compared;
 }
 
 export function String_contains(data: any, path: string, pattern: string) {
-  const value = VM.get(data, path);
+  const value = get(data, path);
   if (typeof value != 'string') return false;
   return !!~value.indexOf(pattern);
 };

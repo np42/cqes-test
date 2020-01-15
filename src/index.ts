@@ -1,4 +1,4 @@
-import { VM, AST }   from './VM';
+import { VM, AST }   from 'cqes-util';
 import * as Builtins from './builtins';
 const colors = require('colors');
 
@@ -7,8 +7,7 @@ export interface TestingGroup { [description: string]: TestingTree };
 export type TestingChain      = Array<TestingItem>;
 export type TestingItem       = Function | AST | TestingGroup;
 
-const vm = new VM();
-export { Builtins };
+const vm = new VM(Builtins);
 
 export const tick   = colors.green.bold('✔');
 export const ballot = colors.red.bold('✗');

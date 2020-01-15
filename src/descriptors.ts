@@ -1,4 +1,4 @@
-import { VM } from './VM';
+import { VM } from 'cqes-util';
 
 export function equiv(data: any, value: any) {
   const strValue = JSON.stringify(value);
