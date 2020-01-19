@@ -8,12 +8,17 @@ export function equiv(data: any, path: string, value: any) {
 };
 
 export function is(data: any, path: string, type: string) {
-  return typeof get(data, path) === type;
+  const value      = get(data, path);
+  const expect     = String(type).toLowerCase();
+  if (expect === 'null') return value == null;
+  const objectType = Object.prototype.toString.call(value);
+  const typeName   = objectType.substring(8, objectType.length - 1).toLowerCase();
+  return typeName === expect;
 };
 
 export function isUUID(data: any, path: string) {
   return /^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(get(data, path));
-}
+};
 
 export function assert(data: any, path: string, test: AST) {
   const result = this.exec(data, path, test);

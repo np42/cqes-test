@@ -6,9 +6,9 @@ export function equiv(data: any, value: any) {
   return 'expected: ' + strValue + ' got: ' + strData;
 };
 
-export function is(data: any) {
+export function is(data: any, type: string) {
   const strData  = JSON.stringify(data);
-  return 'expect ' + strData + ' to be a string';
+  return 'expect ' + strData + ' to be of type ' + type;
 };
 
 export function String_contains(data: any, pattern: string) {
