@@ -5,12 +5,23 @@ const colors = require('colors');
 export type TestingTree       = TestingGroup | TestingChain;
 export interface TestingGroup { [description: string]: TestingTree };
 export type TestingChain      = Array<TestingItem>;
-export type TestingItem       = Function | AST | TestingGroup;
+export type TestingItem       = Function | AST | TestingGroup | TestingChain;
 
 const vm = new VM(Builtins);
 
 export const tick   = colors.green.bold('✔');
 export const ballot = colors.red.bold('✗');
+
+function applyResult(session: any, result: any) {
+  if (typeof result == 'number') {
+    session.count += result;
+  } else if (result && 'count' in result) {
+    session.count += result.count;
+    session.data = result.value;
+  } else {
+    session.count += 1;
+  }
+}
 
 export function test(ast: TestingTree, data: any = null, indent: number = 0): { count: number, data: any } {
   const prefix = Array(indent).fill(' ').join('');
@@ -21,26 +32,18 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0): { 
         if (typeof param === 'function') {
           return { data: param(session.data), count: session.count };
         } else if (param instanceof Array) {
-          if (typeof param[0] == 'string') {
-            const result = vm.exec(session.data, '', <AST>param);
-            if (typeof result == 'number') {
-              session.count += result;
-            } else if (result && 'count' in result) {
-              session.count += result.count;
-              session.data = result.value;
-            } else {
-              session.count += 1;
-            }
-          } else {
-            const result = vm.exec(session.data, '', ['Assert.all', param]);
-            if (typeof result == 'number') {
-              session.count += result;
-            } else if (result && 'count' in result) {
-              session.count += result.count;
-              session.data = result.value;
-            } else {
-              session.count += 1;
-            }
+          switch (typeof param[0]) {
+          case 'string': {
+            applyResult(session, vm.exec(session.data, '', <AST>param));
+          } break ;
+          case 'function': {
+            session.data = param[0](session.data);
+            if (param.length > 0)
+              applyResult(session, test(param.slice(1), session.data, indent));
+          } break ;
+          default : {
+            applyResult(session, vm.exec(session.data, '', ['Assert.all', param]));
+          } break ;
           }
           return session;
         } else if (param && typeof param === 'object') {

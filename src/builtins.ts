@@ -20,17 +20,62 @@ export function isUUID(data: any, path: string) {
   return /^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(get(data, path));
 };
 
-export function assert(data: any, path: string, test: AST) {
-  const result = this.exec(data, path, test);
-  if (typeof result === 'number' && result > 0) return result;
-  if (result) return 1;
-  const name = test[0].indexOf('.') > 0 ? test[0].replace(/\./g, '_') : test[0];
-  if (name in Descriptors) {
-    const value = get(data, path);
-    const message = Descriptors[name].apply(this, [value, ...test.slice(1)]);
-    throw new Error((path || '(root)') + ': ' + message);
+export function has(data: any, path: string, content: any) {
+  const value = get(data, path);
+  if (value instanceof Array) {
+    switch (content) {
+    case 'boolean': case 'number': case 'string':
+      return ~value.indexOf(content);
+    default :
+      if (content == null) return true;
+      for (const item of value)
+        if (has(item, '', content))
+          return true;
+      return false;
+    }
+  } else if (value instanceof Set) {
+    console.log('TODO', __filename);
+    return false;
+  } else if (value instanceof Map) {
+    console.log('TODO', __filename);
+    return false;
+  } else if (value instanceof Object) {
+    if (content instanceof Object) {
+      for (const key in content)
+        if (!has(value[key], '', content[key]))
+          return false;
+      return true;
+    } else {
+      return false;
+    }
+  } else if (value == content) {
+    return true;
   } else {
-    throw new Error(JSON.stringify(test) + ': not satisfied');
+    return false;
+  }
+}
+
+export function assert(data: any, path: string, test: AST | Function) {
+  let result = null;
+  let name = null;
+  if (typeof test === 'function') {
+    result = test(data, path)
+    name   = String(test);
+    if (typeof result === 'number' && result > 0) return result;
+    if (result == null || result === true) return 1;
+    throw new Error(name + ': not satisfied');
+  } else {
+    result = this.exec(data, path, test);
+    name   = test[0].indexOf('.') > 0 ? test[0].replace(/\./g, '_') : test[0];
+    if (typeof result === 'number' && result > 0) return result;
+    if (result == null || result === true) return 1;
+    if (name in Descriptors) {
+      const value = get(data, path);
+      const message = Descriptors[name].apply(this, [value, ...test.slice(1)]);
+      throw new Error((path || '(root)') + ': ' + message);
+    } else {
+      throw new Error(JSON.stringify(test) + ': not satisfied');
+    }
   }
 };
 
