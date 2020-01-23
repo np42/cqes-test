@@ -20,6 +20,28 @@ export function isUUID(data: any, path: string) {
   return /^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(get(data, path));
 };
 
+export function count(data: any, path: string, content: any, count: number) {
+  const collection = get(data, path);
+  if (collection instanceof Array) {
+    let sum = 0;
+    for (let i = 0; i < collection.length; i += 1)
+      sum += has(collection[i], '', content) ? 1 : 0;
+    return sum === count;
+  } else if (collection instanceof Set) {
+    console.log('TODO', __filename);
+    return false;
+  } else if (collection instanceof Map) {
+    console.log('TODO', __filename);
+    return false;
+  } else {
+    return count === 1 && has(collection, '', content);
+  }
+}
+
+export function hasNot(data: any, path: string, content: any) {
+  return !has(data, path, content);
+}
+
 export function has(data: any, path: string, content: any) {
   const value = get(data, path);
   if (value instanceof Array) {
