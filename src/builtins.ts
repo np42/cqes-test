@@ -2,9 +2,15 @@ import { AST, VM, get, join } from 'cqes-util';
 import { C, E, Q, R, S }      from 'cqes';
 import * as Descriptors       from './descriptors';
 import { v4 as uuid }         from 'uuid';
+import * as _assert           from 'assert';
 
 export function equiv(data: any, path: string, value: any) {
-  return get(data, path) == value;
+  try {
+    _assert.deepEqual(get(data, path), value);
+    return true;
+  } catch (e) {
+    return false;
+  }
 };
 
 export function is(data: any, path: string, type: string) {
