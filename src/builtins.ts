@@ -122,6 +122,11 @@ export function Assert_fields(data: any, path: string, ...tests: AST[]) {
   }, 0);
 };
 
+export function Assert_equiv(data: any, path: string, value: any) {
+  if (equiv(data, path, value)) return ;
+  throw new Error(JSON.stringify(get(data, path)) + ' != ' + JSON.stringify(value));
+}
+
 export function Math_greaterThan(data: any, path: string, compared: number) {
   return get(data, path) > compared;
 }
