@@ -7,6 +7,8 @@ export interface TestingGroup { [description: string]: TestingTree };
 export type TestingChain      = Array<TestingItem>;
 export type TestingItem       = Function | AST | TestingGroup | TestingChain;
 
+export interface TestResult { count: number, data: any };
+
 const vm = new VM(Builtins);
 
 export const tick   = colors.green.bold('✔');
@@ -23,37 +25,37 @@ function applyResult(session: any, result: any) {
   }
 }
 
-export function test(ast: TestingTree, data: any = null, indent: number = 0): { count: number, data: any } {
+export async function test(ast: TestingTree, data: any = null, indent: number = 0): Promise<TestResult> {
   const prefix = Array(indent).fill(' ').join('');
   const session = { count: 0, data };
   if (ast instanceof Array) {
     try {
-      return ast.reduce((session, param) => {
+      let result = session;
+      for (const item of ast) {
+        const param = item;
         if (typeof param === 'function') {
-          return { data: param(session.data), count: session.count };
+          result = { data: await param(result.data), count: result.count };
         } else if (param instanceof Array) {
           switch (typeof param[0]) {
           case 'string': {
-            applyResult(session, vm.exec(session.data, '', <AST>param));
+            applyResult(result, vm.exec(result.data, '', <AST>param));
           } break ;
           case 'function': {
-            session.data = param[0](session.data);
+            result.data = param[0](result.data);
             if (param.length > 0)
-              applyResult(session, test(param.slice(1), session.data, indent));
+              applyResult(result, await test(param.slice(1), result.data, indent));
           } break ;
           default : {
-            applyResult(session, vm.exec(session.data, '', ['Assert.all', param]));
+            applyResult(result, vm.exec(result.data, '', ['Assert.all', param]));
           } break ;
           }
-          return session;
         } else if (param && typeof param === 'object') {
           process.stdout.write('\n');
-          const { count } = test(param, session.data, indent);
-          return { data: session.data, count };
-        } else {
-          return session;
+          const { count } = await test(param, result.data, indent);
+          result = { data: result.data, count };
         }
-      }, session);
+      }
+      return result;
     } catch (e) {
       failed(e);
       return { count: 0, data };
@@ -67,7 +69,7 @@ export function test(ast: TestingTree, data: any = null, indent: number = 0): { 
       process.stdout.write(prefix + label + ':');
       if (hisChildIsObject) process.stdout.write('\n');
       didSucceed = false;
-      const { count } = test(value, data, indent + 2);
+      const { count } = await test(value, data, indent + 2);
       if (!hisChildIsObject) {
         if (count > 0) { didSucceed = true; succeed(count); }
         else process.stdout.write('\n');
